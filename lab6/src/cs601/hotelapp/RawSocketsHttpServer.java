@@ -17,6 +17,8 @@ public class RawSocketsHttpServer extends Thread{
 	private final WorkQueue workQueue;
 	private ThreadSafeHotelData tsData;
 	private HotelDataBuilder hotelDataBuilder;
+	private boolean alive;
+	private volatile int numTasks; // how many runnable tasks are pending
 	
 	public RawSocketsHttpServer() {
 		// Before we start our server, we need to load all the hotel data 
@@ -27,7 +29,10 @@ public class RawSocketsHttpServer extends Thread{
 		hotelDataBuilder.loadHotelInfo("input/hotels200.json");
 		hotelDataBuilder.loadReviews(Paths.get("input/reviews8000"));
 		hotelDataBuilder.shutdown();
+		//Initialize other variable
 		workQueue = new WorkQueue();
+		alive = true;
+		numTasks=0;
 		System.out.println("Server is ready!!!");
 	}
 	
@@ -38,15 +43,16 @@ public class RawSocketsHttpServer extends Thread{
 		try {
 			// For listening for connection request from clients
 			serverSocket = new ServerSocket(PORT);
-			// Waits for a client to connect, creates a new connection socket for talking to this client.
-			socket = serverSocket.accept();
-			// WelcomingSocket will continue listening for connections from other clients
-			// We can send this connection to WorkQueue
-			workQueue.execute(new ServersWorker(socket));
+			while(alive){
+				// Waits for a client to connect, creates a new connection socket for talking to this client.
+				socket = serverSocket.accept();
+				// WelcomingSocket will continue listening for connections from other clients
+				// We can send this connection to WorkQueue
+				workQueue.execute(new ServersWorker(socket));
+			}			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			/*
 			try {
 				if (serverSocket != null && !serverSocket.isClosed())
 					serverSocket.close();
@@ -55,7 +61,6 @@ public class RawSocketsHttpServer extends Thread{
 			} catch (IOException e) {
 				System.out.println("Could not close the socket");
 			}
-			*/
 		}
 	}
 	
@@ -64,14 +69,17 @@ public class RawSocketsHttpServer extends Thread{
 
 		public ServersWorker(Socket socket) {
 			this.socket = socket;
+			incrementNumTasks();
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
+			BufferedReader bufferedReader = null;
+			PrintWriter printWriter = null;
 			try {
-				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+				bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				printWriter = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 				// The server can now read lines sent by the client using BufferedReader
 				String input = new String();
 				input = bufferedReader.readLine();
@@ -88,16 +96,16 @@ public class RawSocketsHttpServer extends Thread{
 					// check path
 					if(requestParams[1].contains("?") && requestParams[1].contains("=")){
 						String path = requestParams[1].substring(0, requestParams[1].indexOf("?"));
-						System.out.println(path);
+						//System.out.println(path);
 						
 						// /hotelInfo
 						if(path.equals("/hotelInfo")){
-							System.out.println("in /hotelInfo");
+							//System.out.println("in /hotelInfo");
 							String parameter = requestParams[1].substring(requestParams[1].indexOf("?"));
 							String[] parameters = parameter.split("=");
 							if((parameters.length == 2) && parameters[0].equals("?hotelId")) {
 								String hotelId = parameters[1];
-								System.out.println(hotelId);
+								//System.out.println(hotelId);
 								Hotel hotel = tsData.containsHotelKeyForHttpServer(parameters[1]);
 								// check hotelId exist or not
 								if(hotel != null) {								
@@ -113,7 +121,7 @@ public class RawSocketsHttpServer extends Thread{
 									jsonObject.put("state", hotel.getAddress().getState());
 									jsonObject.put("lat", hotel.getAddress().getLongitude());
 									jsonObject.put("lng", hotel.getAddress().getLatitude());
-									jsonObject.put("country", "USA .... NEED TO BE INVOKED");
+									jsonObject.put("country", "USA");
 									printWriter.print(jsonObject);
 									htmlFooterMessage(printWriter);	
 								} else {
@@ -129,7 +137,7 @@ public class RawSocketsHttpServer extends Thread{
 								warningMessage(printWriter);
 							}
 						} else if (path.equals("/reviews")) {
-							System.out.println("in /reviews");
+							//System.out.println("in /reviews");
 							String parameter = requestParams[1].substring(requestParams[1].indexOf("?"));
 							String[] parameters = parameter.split("&");
 							if(parameters.length == 2) {
@@ -169,10 +177,18 @@ public class RawSocketsHttpServer extends Thread{
 						warningMessage(printWriter);
 					}	
 				}
-				bufferedReader.close();
-				printWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
+			} finally {
+				try {
+					printWriter.close();
+					bufferedReader.close();
+					socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					decrementNumTask();
+				}
 			}
 		}
 	}
@@ -229,11 +245,50 @@ public class RawSocketsHttpServer extends Thread{
 		printWriter.flush();		
 	}
 	
+	/**
+	 *  Wait for all pending work to finish
+	 */
+	public synchronized void waitUntilFinished() {
+		while(numTasks > 0) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * increment number of task in synchronised way
+	 */
+	public synchronized void incrementNumTasks() {
+		numTasks++;
+	}
+
+	/**
+	 * decrement number of task in synchronised way
+	 */
+	public synchronized void decrementNumTask() {
+		numTasks--;
+		if(numTasks <= 0){
+			notifyAll();
+		}
+	}
+
+	/**
+	 * Wait until there is no pending work, then shutdown the queue
+	 */
+	public synchronized void shutdown(){
+		waitUntilFinished();
+		workQueue.shutdown();
+	}
+	
 	public static void main(String[] args) {		
 		RawSocketsHttpServer server = new RawSocketsHttpServer();
 		server.start();
 		try {
 			server.join();
+			server.shutdown();
 		} catch (InterruptedException e) {
 			System.out.println("InterruptedException occurred " + e);
 		}

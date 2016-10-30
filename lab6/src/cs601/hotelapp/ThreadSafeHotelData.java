@@ -1,24 +1,14 @@
 package cs601.hotelapp;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import cs601.concurrent.ReentrantReadWriteLock;
 
@@ -38,7 +28,6 @@ public class ThreadSafeHotelData {
 	private Address address;
 	private Review reviews;
 	private Boolean isSuccessful;
-	private static final Logger logger = LogManager.getLogger();
 	
 	//Created ReentrantReadWriteLock lock object
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -131,8 +120,6 @@ public class ThreadSafeHotelData {
 			//Initialise it to default value.
 			isSuccessful = false;
 			//Check the rating is in the correct range or not.
-			
-			//TODO: simplify if condition, since both >1 and <5 return false
 			if(1> rating || 5 < rating) {
 				// set the false.
 				isSuccessful = false;
@@ -144,7 +131,6 @@ public class ThreadSafeHotelData {
 					// set the true.
 					isSuccessful = true;
 				} catch (ParseException e) {
-					// TODO Auto-generated catch block
 					//e.printStackTrace();
 					System.out.println("Date is invalid!");
 				}
@@ -273,7 +259,6 @@ public class ThreadSafeHotelData {
 				printWriter.flush();
 				printWriter.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		} finally {
@@ -290,9 +275,9 @@ public class ThreadSafeHotelData {
 		// I locked with lockWrite. Otherwise, deadlock occurs.
 		lock.lockWrite();
 		try {
-			for (String hotel_id_review: localtshData.getReviewsGivenByHotelId().keySet()){
+			for (String hotel_id_review: localtshData.reviewsGivenByHotelId.keySet()){
 				if(hotelsGivenByHotelId.containsKey(hotel_id_review)){
-					reviewsGivenByHotelId.put(hotel_id_review, localtshData.getReviewsGivenByHotelId().get(hotel_id_review));
+					reviewsGivenByHotelId.put(hotel_id_review, localtshData.reviewsGivenByHotelId.get(hotel_id_review));
 				}
 			}
 		} finally {
@@ -302,12 +287,66 @@ public class ThreadSafeHotelData {
 
 	/**
 	 * 
-	 * @return  - reviewsGivenByHotelId 
+	 * @param string - Hotel Id
+	 * @return
+	 * 		- If HotelId exist, it returns Hotel. if not, null.
 	 */
-	private Map<String, TreeSet<Review>> getReviewsGivenByHotelId() {
+	public Hotel containsHotelKeyForHttpServer(String string) {
 		lock.lockRead();
-		try{
-			return reviewsGivenByHotelId;
+		try {
+			return hotelsGivenByHotelId.get(string);
+		} finally {
+			lock.unlockRead();
+		}		
+	}
+
+	/**
+	 * 
+	 * @param string - Hotel Id
+	 * @return
+	 * 		- the number of reviews belong to HotelId.
+	 */
+	public int maxNumberOfReviewsForHttpServer(String string) {
+		lock.lockRead();
+		try {
+			return reviewsGivenByHotelId.size();
+		} finally {
+			lock.unlockRead();
+		}
+	}
+
+	/**
+	 * 
+	 * @param string - Hotel Id
+	 * @param num - number of Reviews that will be returned.
+	 * @return
+	 * 		- JsonObject that contains reviews inside it.
+	 */
+	@SuppressWarnings("unchecked")
+	public JSONObject getJSONReviewsForHttpServer(String string, int num) {
+		lock.lockRead();
+		try {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("success", true);
+			jsonObject.put("hotelId", string);										
+			JSONArray jsonArray = new JSONArray();
+			int i=0;
+			if (num == 0) { return jsonObject; }
+			for(Review review: reviewsGivenByHotelId.get(string)){				
+				JSONObject jsonObjectInArray = new JSONObject();
+				jsonObjectInArray.put("reviewId", review.getReview_id());
+				jsonObjectInArray.put("title", review.getReview_title());
+				jsonObjectInArray.put("user", review.getUsername());
+				jsonObjectInArray.put("reviewText",  review.getReview_text());
+				jsonObjectInArray.put("date", review.getDate());
+				jsonArray.add(jsonObjectInArray);
+				i++;
+				if(i>=num){
+					jsonObject.put("reviews", jsonArray);
+					return jsonObject;
+				}
+			}
+			return null;
 		} finally {
 			lock.unlockRead();
 		}

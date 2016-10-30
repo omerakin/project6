@@ -7,27 +7,28 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
-
-import org.json.simple.JSONArray;
+import java.nio.file.Paths;
 import org.json.simple.JSONObject;
-
 import cs601.concurrent.WorkQueue;
 
 public class RawSocketsHttpServer extends Thread{
 	public final static int PORT = 8080;
 	private static final String TITLE = "RawSocketsHttpServer";
-	private final Map<String, Hotel> hotelsGivenByHotelId;
-	private final Map<String, TreeSet<Review>> reviewsGivenByHotelId;
 	private final WorkQueue workQueue;
-	
+	private ThreadSafeHotelData tsData;
+	private HotelDataBuilder hotelDataBuilder;
 	
 	public RawSocketsHttpServer() {
-		hotelsGivenByHotelId = new HashMap<String,Hotel>();  // change this parts...
-		reviewsGivenByHotelId = new HashMap<String,TreeSet<Review>>(); 	// change this parts...
+		// Before we start our server, we need to load all the hotel data 
+		// (both general hotel info and reviews) into our data structures 
+		// from the input files.
+		tsData = new ThreadSafeHotelData();
+		hotelDataBuilder = new HotelDataBuilder(tsData);
+		hotelDataBuilder.loadHotelInfo("input/hotels200.json");
+		hotelDataBuilder.loadReviews(Paths.get("input/reviews8000"));
+		hotelDataBuilder.shutdown();
 		workQueue = new WorkQueue();
+		System.out.println("Server is ready!!!");
 	}
 	
 	public void run() {
@@ -65,6 +66,7 @@ public class RawSocketsHttpServer extends Thread{
 			this.socket = socket;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
 			try {
@@ -95,22 +97,23 @@ public class RawSocketsHttpServer extends Thread{
 							String[] parameters = parameter.split("=");
 							if((parameters.length == 2) && parameters[0].equals("?hotelId")) {
 								String hotelId = parameters[1];
-								System.out.println(hotelId);								
+								System.out.println(hotelId);
+								Hotel hotel = tsData.containsHotelKeyForHttpServer(parameters[1]);
 								// check hotelId exist or not
-								if(hotelsGivenByHotelId.containsKey(parameters[1])) {								
+								if(hotel != null) {								
 									headerMessage(printWriter);
 									htmlHeaderMessage(printWriter);
 									// Json File
 									JSONObject jsonObject = new JSONObject();
 									jsonObject.put("success", true);
 									jsonObject.put("hotelId", hotelId);
-									jsonObject.put("name", "Hilton San Francisco Union Square");
-									jsonObject.put("addr", "333 O'Farrell St.");
-									jsonObject.put("city", "San Francisco");
-									jsonObject.put("state", "CA");
-									jsonObject.put("lat", "37.786160");
-									jsonObject.put("lng", "-122.410180");
-									jsonObject.put("country", "USA");
+									jsonObject.put("name", hotel.getHotel_name());
+									jsonObject.put("addr", hotel.getAddress().getStreet_address());
+									jsonObject.put("city", hotel.getAddress().getCity());
+									jsonObject.put("state", hotel.getAddress().getState());
+									jsonObject.put("lat", hotel.getAddress().getLongitude());
+									jsonObject.put("lng", hotel.getAddress().getLatitude());
+									jsonObject.put("country", "USA .... NEED TO BE INVOKED");
 									printWriter.print(jsonObject);
 									htmlFooterMessage(printWriter);	
 								} else {
@@ -135,26 +138,14 @@ public class RawSocketsHttpServer extends Thread{
 								if((hotelIdPart.length == 2) && (hotelIdPart[0].equals("?hotelId"))
 										&& (numPart.length == 2) && (numPart[0].equals("num"))) {
 									int num = Integer.parseInt(numPart[1]);
+									int maxNum = tsData.maxNumberOfReviewsForHttpServer(hotelIdPart[1]);
+									if(num > maxNum){ num = maxNum;	}
+									Hotel hotel = tsData.containsHotelKeyForHttpServer(hotelIdPart[1]);
 									// check hotelId exist or not
-									if(hotelsGivenByHotelId.containsKey(hotelIdPart[1])) {								
+									if(hotel!= null) {								
 										headerMessage(printWriter);
 										htmlHeaderMessage(printWriter);
-										// Json File
-										JSONObject jsonObject = new JSONObject();
-										jsonObject.put("success", true);
-										jsonObject.put("hotelId", hotelIdPart[1]);										
-										JSONArray jsonArray = new JSONArray();
-										for(int i=0; i < num;i++){
-											JSONObject jsonObjectInArray = new JSONObject();
-											jsonObjectInArray.put("reviewId", "aXdsoJShow25vnla");
-											jsonObjectInArray.put("title", "Nice clean hotel");
-											jsonObjectInArray.put("user", "Bob15");
-											jsonObjectInArray.put("reviewText",  "The location is perfect, close to all attractions. Lots of good places to eat nearby.");
-											jsonObjectInArray.put("date", "09:05:16");
-											jsonArray.add(jsonObjectInArray);
-										}
-										jsonObject.put("reviews", jsonArray);
-										printWriter.print(jsonObject);
+										printWriter.print(tsData.getJSONReviewsForHttpServer(hotelIdPart[1], num));
 										htmlFooterMessage(printWriter);	
 									} else {
 										headerMessage(printWriter);
@@ -238,7 +229,7 @@ public class RawSocketsHttpServer extends Thread{
 		printWriter.flush();		
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) {		
 		RawSocketsHttpServer server = new RawSocketsHttpServer();
 		server.start();
 		try {
@@ -246,8 +237,5 @@ public class RawSocketsHttpServer extends Thread{
 		} catch (InterruptedException e) {
 			System.out.println("InterruptedException occurred " + e);
 		}
-		
-
 	}
-
 }

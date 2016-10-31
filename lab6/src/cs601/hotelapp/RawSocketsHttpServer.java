@@ -121,7 +121,7 @@ public class RawSocketsHttpServer extends Thread{
 									jsonObject.put("state", hotel.getAddress().getState());
 									jsonObject.put("lat", hotel.getAddress().getLongitude());
 									jsonObject.put("lng", hotel.getAddress().getLatitude());
-									jsonObject.put("country", "USA");
+									jsonObject.put("country", hotel.getAddress().getCountry());
 									printWriter.print(jsonObject);
 									htmlFooterMessage(printWriter);	
 								} else {

@@ -75,6 +75,8 @@ public class HotelDataBuilder {
 				String hotelCity = (String) jsonObjectHotel.get("ci");
 				// Get hotelState
 				String hotelState = (String) jsonObjectHotel.get("pr");
+				// Get hotelCountry
+				String hotelCountry = (String) jsonObjectHotel.get("c");
 				// Get hotelStreetAddress
 				String hotelStreetAddress = (String) jsonObjectHotel.get("ad");
 				//Create jsonObjectHotelLL to get Lat and Lng
@@ -85,7 +87,7 @@ public class HotelDataBuilder {
 				double hotelLon = Double.parseDouble((String) jsonObjectHotelLL.get("lng"));
 				
 				// Add to the hotelsGivenByHotelId
-				tshdata.addHotel(hotelId, hotelName, hotelCity, hotelState, hotelStreetAddress, hotelLat, hotelLon);
+				tshdata.addHotel(hotelId, hotelName, hotelCity, hotelState, hotelCountry, hotelStreetAddress, hotelLat, hotelLon);
 				
 			}
 			

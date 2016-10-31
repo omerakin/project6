@@ -5,15 +5,17 @@ public class Address {
 	private String street_address;
 	private String city;
 	private String state;
+	private String country;
 	private double longitude;
 	private double latitude;
 	
-	public Address (String street_address, String city, String state, 
+	public Address (String street_address, String city, String state, String country,
 			double longitude, double latitude) {
 		
 		this.street_address = street_address;
 		this.city = city;
 		this.state = state;
+		this.country = country;
 		this.longitude = longitude;
 		this.latitude = latitude;
 		
@@ -41,6 +43,14 @@ public class Address {
 
 	public void setState(String state) {
 		this.state = state;
+	}
+	
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
 	}
 
 	public double getLongitude() {

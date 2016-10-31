@@ -23,7 +23,7 @@ public class HotelBuilderTest {
 		// Add a hotel to the hotel data, check if it was added correctly
 		String testName = "testSimpleAddHotel";
 		ThreadSafeHotelData hdata = new ThreadSafeHotelData();
-		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "55 Cyril Magnin St", 37.78,
+		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "USA","55 Cyril Magnin St", 37.78,
 				-122.4);
 		String expected = "Hilton San Francisco Union Square: 25622\n" + "55 Cyril Magnin St\nSan Francisco, CA";
 		Assert.assertEquals(String.format("%n" + "Test Case: %s%n", testName), expected,
@@ -35,7 +35,7 @@ public class HotelBuilderTest {
 		// Adds a hotel and a review, checks that they've been added correctly
 		String testName = "testSimpleAddHotelReview";
 		ThreadSafeHotelData hdata = new ThreadSafeHotelData();
-		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "55 Cyril Magnin St", 37.78,
+		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "USA","55 Cyril Magnin St", 37.78,
 				-122.4);
 		hdata.addReview("25622", "57b717a44751ca0b791823b2", 4, "Room too small",
 				"Great location, but the room is too small", true, "2015-03-04", "Xiaofeng");
@@ -56,7 +56,7 @@ public class HotelBuilderTest {
 		// (by date, and if the dates are equal, by username
 		String testName = "testThreeReviewsSameHotel";
 		ThreadSafeHotelData hdata = new ThreadSafeHotelData();
-		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "55 Cyril Magnin St", 37.78,
+		hdata.addHotel("25622", "Hilton San Francisco Union Square", "San Francisco", "CA", "USA","55 Cyril Magnin St", 37.78,
 				-122.4);
 
 		hdata.addReview("25622", "57b717a44751ca0b791823b2", 4, "Room too small",
@@ -93,7 +93,7 @@ public class HotelBuilderTest {
 		// This review should not be added to the map
 		String testName = "testInvalidRating";
 		ThreadSafeHotelData hdata = new ThreadSafeHotelData();
-		hdata.addHotel("68432", "Best Hotel", "San Francisco", "CA", "762 Market st", 38.0, -120.0);
+		hdata.addHotel("68432", "Best Hotel", "San Francisco", "CA", "USA","762 Market st", 38.0, -120.0);
 		boolean isAdded = hdata.addReview("68432", "57b717a44751ca0b791823b2", 7, "Awesome stay",
 				"Central location. Free sodas!", true, "2016-09-01", "Phil");
 		String expected = "Best Hotel: 68432\n" + "762 Market st\nSan Francisco, CA\n";

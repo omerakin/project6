@@ -25,17 +25,13 @@ public class JettyHttpServer {
 		Server server = new Server(PORT);	
 		
 		ServletContextHandler servletContextHandler1 = new ServletContextHandler();
-		servletContextHandler1.setContextPath("/hotelInfo");
-		servletContextHandler1.addServlet(JettyHotelInfoServlet.class, "/");
+		servletContextHandler1.setContextPath("/");
+		servletContextHandler1.addServlet(JettyHotelInfoServlet.class, "/hotelInfo");
+		servletContextHandler1.addServlet(JettyReviewsServlet.class, "/reviews");
 		servletContextHandler1.setAttribute("tsData", tsData);
 		
-		ServletContextHandler servletContextHandler2 = new ServletContextHandler();
-		servletContextHandler2.setContextPath("/reviews");
-		servletContextHandler2.addServlet(JettyReviewsServlet.class, "/");
-		servletContextHandler2.setAttribute("tsData", tsData);
-		
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { servletContextHandler1, servletContextHandler2 });
+		handlers.setHandlers(new Handler[] {servletContextHandler1});
 		
 		server.setHandler(handlers);
 		server.start();

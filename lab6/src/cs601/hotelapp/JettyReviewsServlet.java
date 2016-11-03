@@ -24,7 +24,10 @@ public class JettyReviewsServlet extends HttpServlet {
 		String hotelId = req.getParameter("hotelId");
 		String numString = req.getParameter("num");
 		if (hotelId == null || hotelId.isEmpty() || numString == null || numString.isEmpty()){
-			printWriter.println("Something is wrong with Restful API.");
+			JSONObject jsonObjectNotExist = new JSONObject();
+			jsonObjectNotExist.put("success", false);
+			jsonObjectNotExist.put("hotelId", "invalid");
+			jsonObjectNotExist.writeJSONString(printWriter);
 		} else {
 			ThreadSafeHotelData tsData = (ThreadSafeHotelData) getServletContext().getAttribute("tsData");
 			hotelId = StringEscapeUtils.escapeHtml4(hotelId);

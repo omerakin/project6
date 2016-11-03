@@ -9,7 +9,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 
 public class JettyHttpServer {
-	public static final int PORT = 8080;
+	//public static final int PORT = 8080;
+	public static final int PORT = 3050;
 
 	public static void main(String[] args) throws Exception {
 		// Before we start our server, we need to load all the hotel data 
@@ -24,14 +25,15 @@ public class JettyHttpServer {
 		// Server	
 		Server server = new Server(PORT);	
 		
-		ServletContextHandler servletContextHandler1 = new ServletContextHandler();
-		servletContextHandler1.setContextPath("/");
-		servletContextHandler1.addServlet(JettyHotelInfoServlet.class, "/hotelInfo");
-		servletContextHandler1.addServlet(JettyReviewsServlet.class, "/reviews");
-		servletContextHandler1.setAttribute("tsData", tsData);
+		ServletContextHandler servletContextHandler = new ServletContextHandler();
+		servletContextHandler.setContextPath("/");
+		servletContextHandler.addServlet(JettyHotelInfoServlet.class, "/hotelInfo");
+		servletContextHandler.addServlet(JettyReviewsServlet.class, "/reviews");
+		servletContextHandler.addServlet(JettyOthersServlet.class, "/");
+		servletContextHandler.setAttribute("tsData", tsData);
 		
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] {servletContextHandler1});
+		handlers.setHandlers(new Handler[] {servletContextHandler});
 		
 		server.setHandler(handlers);
 		server.start();

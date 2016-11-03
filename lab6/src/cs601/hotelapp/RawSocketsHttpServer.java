@@ -12,8 +12,8 @@ import org.json.simple.JSONObject;
 import cs601.concurrent.WorkQueue;
 
 public class RawSocketsHttpServer extends Thread{
-	public final static int PORT = 8080;
-	private static final String TITLE = "RawSocketsHttpServer";
+	//public final static int PORT = 8080;
+	public final static int PORT = 3000;
 	private final WorkQueue workQueue;
 	private ThreadSafeHotelData tsData;
 	private HotelDataBuilder hotelDataBuilder;
@@ -89,9 +89,7 @@ public class RawSocketsHttpServer extends Thread{
 				// The server can send response if Http request is not Get.
 				if(!requestParams[0].equals("GET")) {
 					headerMessage(printWriter);
-					htmlHeaderMessage(printWriter);
-					printWriter.println("<p> 405 Method not allowed! </p>");
-					htmlFooterMessage(printWriter);
+					printWriter.println("405 Method not allowed!");
 				} else {
 					// check path
 					if(requestParams[1].contains("?") && requestParams[1].contains("=")){
@@ -110,7 +108,6 @@ public class RawSocketsHttpServer extends Thread{
 								// check hotelId exist or not
 								if(hotel != null) {								
 									headerMessage(printWriter);
-									htmlHeaderMessage(printWriter);
 									// Json File
 									JSONObject jsonObject = new JSONObject();
 									jsonObject.put("success", true);
@@ -123,15 +120,12 @@ public class RawSocketsHttpServer extends Thread{
 									jsonObject.put("lng", hotel.getAddress().getLatitude());
 									jsonObject.put("country", hotel.getAddress().getCountry());
 									printWriter.print(jsonObject);
-									htmlFooterMessage(printWriter);	
 								} else {
 									headerMessage(printWriter);
-									htmlHeaderMessage(printWriter);
 									JSONObject jsonObjectNotExist = new JSONObject();
 									jsonObjectNotExist.put("success", false);
 									jsonObjectNotExist.put("hotelId", "invalid");
-									jsonObjectNotExist.writeJSONString(printWriter);
-									htmlFooterMessage(printWriter);									
+									jsonObjectNotExist.writeJSONString(printWriter);						
 								}
 							} else {
 								warningMessage(printWriter);
@@ -152,17 +146,13 @@ public class RawSocketsHttpServer extends Thread{
 									// check hotelId exist or not
 									if(hotel!= null) {								
 										headerMessage(printWriter);
-										htmlHeaderMessage(printWriter);
-										printWriter.print(tsData.getJSONReviewsForHttpServer(hotelIdPart[1], num));
-										htmlFooterMessage(printWriter);	
+										printWriter.print(tsData.getJSONReviewsForHttpServer(hotelIdPart[1], num));	
 									} else {
 										headerMessage(printWriter);
-										htmlHeaderMessage(printWriter);
 										JSONObject jsonObjectNotExist = new JSONObject();
 										jsonObjectNotExist.put("success", false);
 										jsonObjectNotExist.put("hotelId", "invalid");
-										jsonObjectNotExist.writeJSONString(printWriter);
-										htmlFooterMessage(printWriter);									
+										jsonObjectNotExist.writeJSONString(printWriter);			
 									}									
 								} else {
 									warningMessage(printWriter);
@@ -198,11 +188,17 @@ public class RawSocketsHttpServer extends Thread{
 	 * @param printWriter
 	 * 				-	Output printWriter
 	 */
+	@SuppressWarnings("unchecked")
 	public synchronized void warningMessage(PrintWriter printWriter) {
 		headerMessage(printWriter);
-		htmlHeaderMessage(printWriter);
-		printWriter.println("<p> Something is wrong with Restful API. </p>");
-		htmlFooterMessage(printWriter);
+		JSONObject jsonObjectNotExist = new JSONObject();
+		jsonObjectNotExist.put("success", false);
+		jsonObjectNotExist.put("hotelId", "invalid");
+		try {
+			jsonObjectNotExist.writeJSONString(printWriter);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -213,36 +209,9 @@ public class RawSocketsHttpServer extends Thread{
 	public synchronized void headerMessage(PrintWriter printWriter) {
 		// Header
 		printWriter.println("HTTP/1.0 200 OK");
-		printWriter.println("Content-Type: text/html");
+		printWriter.println("Content-Type: application/json");
 		printWriter.println("Server: AKIN");
 		printWriter.println(""); // This blank line signals the end of the headers
-	}
-	
-	/**
-	 * HTML(Header) of output
-	 * @param printWriter
-	 * 				-	Output printWriter
-	 */
-	public synchronized void htmlHeaderMessage(PrintWriter printWriter) {
-		// HTML(Header) page
-		printWriter.println("<!DOCTYPE HTML>");
-		printWriter.println("<html><head>");
-		printWriter.println("\t<title>" + TITLE + "</title>");
-		printWriter.println("<content=\"text/html;charset=utf-8\">");
-		printWriter.println("</head>");
-		printWriter.println("<body>");
-	}
-	
-	/**
-	 * HTML(Footer) of output
-	 * @param printWriter
-	 * 				-	Output printWriter
-	 */
-	public synchronized void htmlFooterMessage(PrintWriter printWriter) {
-		// HTML(Footer) page
-		printWriter.println("</body>");
-		printWriter.println("</html>");
-		printWriter.flush();		
 	}
 	
 	/**

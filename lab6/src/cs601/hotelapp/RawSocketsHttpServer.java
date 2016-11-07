@@ -27,7 +27,7 @@ public class RawSocketsHttpServer extends Thread{
 		tsData = new ThreadSafeHotelData();
 		hotelDataBuilder = new HotelDataBuilder(tsData);
 		hotelDataBuilder.loadHotelInfo("input/hotels200.json");
-		hotelDataBuilder.loadReviews(Paths.get("input/reviews8000"));
+		hotelDataBuilder.loadReviews(Paths.get("input/reviews"));
 		hotelDataBuilder.shutdown();
 		//Initialize other variable
 		workQueue = new WorkQueue();
@@ -88,7 +88,7 @@ public class RawSocketsHttpServer extends Thread{
 				String[] requestParams = input.split(" ");
 				// The server can send response if Http request is not Get.
 				if(!requestParams[0].equals("GET")) {
-					headerMessage(printWriter);
+					header405Message(printWriter);
 					printWriter.println("405 Method not allowed!");
 				} else {
 					// check path
@@ -164,7 +164,15 @@ public class RawSocketsHttpServer extends Thread{
 							warningMessage(printWriter);
 						}
 					} else {
-						warningMessage(printWriter);
+						if (requestParams[1].contains("hotelInfo") || requestParams[1].contains("reviews")){
+							headerMessage(printWriter);
+							JSONObject jsonObjectNotExist = new JSONObject();
+							jsonObjectNotExist.put("success", false);
+							jsonObjectNotExist.put("hotelId", "invalid");
+							jsonObjectNotExist.writeJSONString(printWriter);
+						} else {
+							header404Message(printWriter);
+						}						
 					}	
 				}
 			} catch (IOException e) {
@@ -208,7 +216,33 @@ public class RawSocketsHttpServer extends Thread{
 	 */
 	public synchronized void headerMessage(PrintWriter printWriter) {
 		// Header
-		printWriter.println("HTTP/1.0 200 OK");
+		printWriter.println("HTTP/1.1 200 OK");
+		printWriter.println("Content-Type: application/json");
+		printWriter.println("Server: AKIN");
+		printWriter.println(""); // This blank line signals the end of the headers
+	}
+	
+	/**
+	 * Header of output
+	 * @param printWriter 
+	 * 				-	Output printWriter
+	 */
+	public synchronized void header404Message(PrintWriter printWriter) {
+		// Header
+		printWriter.println("HTTP/1.1 404 Not Found");
+		printWriter.println("Content-Type: application/json");
+		printWriter.println("Server: AKIN");
+		printWriter.println(""); // This blank line signals the end of the headers
+	}
+	
+	/**
+	 * Header of output
+	 * @param printWriter 
+	 * 				-	Output printWriter
+	 */
+	public synchronized void header405Message(PrintWriter printWriter) {
+		// Header
+		printWriter.println("HTTP/1.1 405 Method Not Allowed");
 		printWriter.println("Content-Type: application/json");
 		printWriter.println("Server: AKIN");
 		printWriter.println(""); // This blank line signals the end of the headers

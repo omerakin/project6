@@ -17,14 +17,11 @@ public class JettyOthersServlet extends HttpServlet{
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("application/json");
+		resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		PrintWriter printWriter = resp.getWriter();
 		JSONObject jsonObjectNotExist = new JSONObject();
 		jsonObjectNotExist.put("success", false);
 		jsonObjectNotExist.put("hotelId", "invalid");
-		jsonObjectNotExist.writeJSONString(printWriter);
-		resp.setStatus(HttpServletResponse.SC_OK);		
+		jsonObjectNotExist.writeJSONString(printWriter);	
 	}
-	
-	
-
 }

@@ -19,7 +19,7 @@ public class JettyHttpServer {
 		ThreadSafeHotelData tsData = new ThreadSafeHotelData();
 		HotelDataBuilder hotelDataBuilder = new HotelDataBuilder(tsData);
 		hotelDataBuilder.loadHotelInfo("input/hotels200.json");
-		hotelDataBuilder.loadReviews(Paths.get("input/reviews8000"));
+		hotelDataBuilder.loadReviews(Paths.get("input/reviews"));
 		hotelDataBuilder.shutdown();
 		
 		// Server	

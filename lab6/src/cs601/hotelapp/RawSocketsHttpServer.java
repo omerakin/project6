@@ -164,7 +164,7 @@ public class RawSocketsHttpServer extends Thread{
 							warningMessage(printWriter);
 						}
 					} else {
-						if (requestParams[1].contains("hotelInfo") || requestParams[1].contains("reviews")){
+						if (requestParams[1].contains("/hotelInfo") || requestParams[1].contains("/reviews")){
 							headerMessage(printWriter);
 							JSONObject jsonObjectNotExist = new JSONObject();
 							jsonObjectNotExist.put("success", false);
